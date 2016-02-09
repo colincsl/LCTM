@@ -15,9 +15,11 @@ from LCTM import datasets
 from LCTM import metrics
 
 # Directories and filename
-base_dir = expanduser("~/Data/")
-# base_dir = "/home/colin/data/"
-save_dir = expanduser("~/Data/Results/")
+base_dir = expanduser("~/data/")
+save_dir = expanduser("~/data/Results/")
+# base_dir = expanduser("~/Data/")
+# save_dir = expanduser("~/Data/Results/")
+
 
 # ------------------------------------------------------------------
 # If running from command line get split index number

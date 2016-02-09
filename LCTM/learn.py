@@ -28,11 +28,16 @@ def subgradient_descent(model, X, Y, n_iter=100, C=1., pretrain=True, verbose=Tr
         np.random.seed(1234)
 
     n_samples = len(X)
+
+    # Check that Xi is of size FxT
+    if X[0].shape[0] > X[0].shape[0]:
+        X = [x.T for x in X]
     
     # if weights haven't been set yet then initialize
     if model.n_classes is None:
         model.n_features = X[0].shape[0]
         model.n_classes = np.max(list(map(np.max, Y)))+1
+        model.max_segs = utils.max_seg_count(Y)
         model.ws.init_weights(model)
 
         if pretrain:

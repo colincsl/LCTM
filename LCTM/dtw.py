@@ -1,7 +1,7 @@
 
 
 import numpy as np
-from numba import float64, jit, int16, boolean
+from numba import float64, jit, int16, boolean, autojit
 import scipy
 import sklearn.neighbors as sn
 from LCTM import utils
@@ -23,15 +23,39 @@ from LCTM import utils
 
 #     cost = cost_U + cost_L
 
-@jit("float32(float32[:,:], float32[:,:], float32)")
-def DTW(x, y, max_value=np.inf):
+@jit("int32(float32[:,:])")
+def _traceback(D):
+    n_ref, n_in = D.shape
+    correspondences = np.zeros(n_in, np.int)
+    correspondences[-1] = n_ref-1
+
+    c = n_ref-1
+    i = n_in-1
+    while i > 0 and c > 0:
+        a = np.argmin([
+                       D[c-1, i-1],
+                       D[c-1, i],
+                       D[c, i-1]
+                       ])
+        if a==0 or a==1:
+            c -= 1
+        if a==0 or a==2:
+            i -= 1
+        correspondences[i] = c
+
+    return correspondences
+
+# @jit("(float32, int32[:])(float32[:,:], float32[:,:], float32)")
+@autojit
+def DTW(x, y, max_value=np.inf, output_correspondences=False):
+    # Should be of shape FxT
     Tx = x.shape[1]
     Ty = y.shape[1]
 
     cost = np.zeros([Tx, Ty], np.float32) + np.inf
     # Compute first row
-    # cost[0,:] = ((x[:,0][:,None]-y)**2).sum(0).cumsum(0)
-    cost[0,:] = ((x[:,0][:,None]!=y)).sum(0).cumsum(0)
+    cost[0,:] = ((x[:,0][:,None]-y)**2).sum(0).cumsum(0)
+    # cost[0,:] = ((x[:,0][:,None]!=y)).sum(0).cumsum(0)
     
     # Compute rest of the rows
     tx = 1
@@ -42,8 +66,8 @@ def DTW(x, y, max_value=np.inf):
             top = cost[tx-1, ty]
             left = cost[tx, ty-1]
 
-            # current = np.sum((x[:,tx]-y[:,ty])**2)
-            current = np.sum((x[:,tx]!=y[:,ty]))
+            current = np.sum((x[:,tx]-y[:,ty])**2)
+            # current = np.sum((x[:,tx]!=y[:,ty]))
             cost[tx, ty] = min(topleft, left, top) + current
 
             # if cost[tx, ty] > max_value:
@@ -53,9 +77,13 @@ def DTW(x, y, max_value=np.inf):
             ty += 1
         tx += 1
 
-    # cost[cost==inf] = 0
+    if output_correspondences:
+        c = _traceback(cost)
+        return cost[-1,-1], c
+    else:
+        return cost[-1,-1]
 
-    return cost[-1,-1]
+
 
 # def DTW(x, y, max_value=np.inf):
 #     Tx = x.shape[1]

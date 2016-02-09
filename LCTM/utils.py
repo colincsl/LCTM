@@ -16,17 +16,44 @@ def imshow_(x):
 	plt.axis("tight")
 
 # ------------- Data -------------
+# def mask_data(X, Y):
+# 	max_len = np.max([x.shape[0] for x in X])
+# 	X_ = np.zeros([len(X), max_len, X[0].shape[1]])
+# 	Y_ = np.zeros([len(X), max_len, Y[0].shape[1]])
+# 	mask = np.zeros([len(X), max_len])
+# 	for i in range(len(X)):
+# 		l = X[i].shape[0]
+# 		X_[i,:l] = X[i]
+# 		Y_[i,:l] = Y[i]
+# 		mask[i,:l] = 1
+# 	return X_, Y_, mask[:,:,None]
+
 def mask_data(X, Y):
-	max_len = np.max([x.shape[0] for x in X])
-	X_ = np.zeros([len(X), max_len, X[0].shape[1]])
-	Y_ = np.zeros([len(X), max_len, Y[0].shape[1]])
+	max_len = np.max([x.shape[1] for x in X])
+	X_ = np.zeros([len(X), X[0].shape[0], max_len])
+	Y_ = np.zeros([len(X), Y[0].shape[0], max_len])
 	mask = np.zeros([len(X), max_len])
 	for i in range(len(X)):
-		l = X[i].shape[0]
-		X_[i,:l] = X[i]
-		Y_[i,:l] = Y[i]
+		l = X[i].shape[1]
+		X_[i,:,:l] = X[i]
+		Y_[i,:,:l] = Y[i]
 		mask[i,:l] = 1
 	return X_, Y_, mask[:,:,None]
+
+# Unmask data
+def unmask(X, M):
+	if X.ndims==1 or (X[0].shape[0] > X[0].shape[1]):
+		return [X[i][M[i].flatten()>0] for i in range(len(X))]
+	else:
+		return [X[i][:,M[i].flatten()>0] for i in range(len(X))]
+
+def match_lengths(X,Y):
+	# Check lengths of data and labels match
+	for i in range(len(Y)):
+		length = min(X[i].shape[0], Y[i].shape[0])
+		X[i] = X[i][:length]
+		Y[i] = Y[i][:length]
+	return X, Y
 
 def remap_labels(Y_all):
 	# Map arbitrary set of labels (e.g. {1,3,5}) to contiguous sequence (e.g. {0,1,2})

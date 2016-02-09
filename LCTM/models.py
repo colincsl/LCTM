@@ -65,14 +65,21 @@ class CoreModel:
             n_nodes = model.n_classes
         return n_nodes
 
-    def predict(model, Xi, Yi=None, is_training=False, output_latent=False):
+    def predict(model, Xi, Yi=None, is_training=False, output_latent=False, inference=None):
         # This function is applicable to normal and latent models
         if type(Xi) is list:
             out = []
             for i in range(len(Xi)):
                 Yi_ = None if Yi is None else Yi[i]
-                out += [model.predict(Xi[i], Yi=Yi_, is_training=is_training, output_latent=output_latent)]
+                out += [model.predict(Xi[i], Yi_, is_training, output_latent, inference)]
             return out
+
+        # Check that Xi is of size FxT
+        if Xi.shape[0] > Xi.shape[0]:
+            Xi = Xi.T
+
+        if Yi is not None:
+            assert Xi.shape[1]==Yi.shape[0], "Error: Xi and Yi are of shapes {} and {}".format(Xi.shape[1],Yi.shape[0])
 
         _, n_timesteps = Xi.shape
         n_nodes = model.n_nodes
@@ -95,15 +102,16 @@ class CoreModel:
             score = reduce_latent_states(score, model.n_latent, model.n_classes)
 
         # Get predictions
-        if model.inference_type is "framewise":
+        inference_type = model.inference_type if inference is None else inference
+        if inference_type is "framewise":
             path = score.argmax(0)
 
-        elif model.inference_type is "filtered":
+        elif inference_type is "filtered":
             assert hasattr(model, "filter_len"), "filter_len must be set"
             path = score.argmax(0)
             path = nd.median_filter(path, model.filter_len)
 
-        elif model.inference_type is "segmental":
+        elif inference_type is "segmental":
             assert hasattr(model, "max_segs"), "max_segs must be set"
             # Check if there is a segmental pw.pairwise term:
             # has_seg_pw = any([type(p) is pw.segmental_pairwise for p in model.potentials.values()])
