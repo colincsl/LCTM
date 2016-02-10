@@ -42,7 +42,7 @@ def mask_data(X, Y):
 
 # Unmask data
 def unmask(X, M):
-	if X.ndims==1 or (X[0].shape[0] > X[0].shape[1]):
+	if X[0].ndim==1 or (X[0].shape[0] > X[0].shape[1]):
 		return [X[i][M[i].flatten()>0] for i in range(len(X))]
 	else:
 		return [X[i][:,M[i].flatten()>0] for i in range(len(X))]
@@ -50,8 +50,8 @@ def unmask(X, M):
 def match_lengths(X,Y):
 	# Check lengths of data and labels match
 	for i in range(len(Y)):
-		length = min(X[i].shape[0], Y[i].shape[0])
-		X[i] = X[i][:length]
+		length = min(X[i].shape[1], Y[i].shape[0])
+		X[i] = X[i][:,:length]
 		Y[i] = Y[i][:length]
 	return X, Y
 

@@ -49,7 +49,6 @@ elif dataset == "50Salads": data = datasets.Salads(base_dir, features)
 else: print("Dataset not correctly specified")
 experiment_name = features + "_" + str(int(time.time()))
 
-
 # Model parameters
 if dataset == "JIGSAWS": primitive_len = 100
 elif dataset == "50Salads": primitive_len = 200
@@ -78,7 +77,6 @@ for idx_task in range(1, data.n_splits+1):
 	# Define and train model
 	# model = models.LatentChainModel(n_latent=3, skip=skip, debug=True)
 	model = models.LatentConvModel(n_latent=1, conv_len=conv_len, skip=skip, debug=True)
-	# model = models.SegmentalModel(debug=True)
 	model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=True)
 
 	# Evaluate using framewise inference

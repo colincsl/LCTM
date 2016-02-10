@@ -1,6 +1,6 @@
 %matplotlib inline
 
-import sys
+import sys, os
 from os.path import expanduser
 import numpy as np
 from scipy import io as sio
@@ -10,17 +10,19 @@ import theano
 from keras.utils import np_utils
 
 # From CVPR16 folder
-from models import *
+# from models import *
+
+os.chdir(expanduser("~/libs/Latent-Convolutional-Action-Primitives/"))
 
 from LCTM import metrics, models, datasets
 from LCTM.dtw import DTW
 from LCTM.infer import segmental_inference
-from LCTM.utils import subsample, mask_data, unmask, save_predictions, imshow_
+from LCTM.utils import subsample, match_lengths, mask_data, unmask, save_predictions, imshow_
 # Directories and filename
-# base_dir = expanduser("~/data/")
-# save_dir = expanduser("~/data/Results/")
-base_dir = expanduser("~/Data/")
-save_dir = expanduser("~/Data/Results/")
+base_dir = expanduser("~/data/")
+save_dir = expanduser("~/data/Results/")
+# base_dir = expanduser("~/Data/")
+# save_dir = expanduser("~/Data/Results/")
 
 
 # ------------------------------------------------------------------
@@ -39,7 +41,7 @@ except:
     # idx_task = 'youtube'
     save = [False, True][0]
 
-video = [False, True][0]
+video = [False, True][1]
 print("tCNN: ({}, {}, {})".format(dataset, eval_idx, idx_task))
 
 if video:
@@ -65,17 +67,16 @@ else:
 save_name = ""+feature_set
 n_nodes = 64
 nb_epoch = 15
-sample_rate = 30
+sample_rate = 1
 model_type = ['cvpr', 'icra', 'dtw'][1]
 
 if dataset == "JIGSAWS": conv = 200
 elif dataset == "50Salads": conv = 200
-elif dataset == "EndoVis": conv = 200*30
+elif dataset == "EndoVis": conv = 200
 else: print("Dataset not specified")
 conv //= sample_rate
 
 # --------------- Load data ------------------------
-
 if dataset == "JIGSAWS": data = datasets.JIGSAWS(base_dir, features)
 elif dataset == "50Salads": data = datasets.Salads(base_dir, features)
 elif dataset == "EndoVis": data = datasets.EndoVis(base_dir, features, sep_splits=False)
@@ -88,9 +89,14 @@ idx_task = 1
 # if 1:
 for idx_task in range(1, data.n_splits+1):
     # Load Data
-    X_train_raw, y_train_raw, X_test_raw, y_test_raw = data.load_split(idx_task)
-    X_train, y_train = subsample(X_train_raw, y_train_raw, sample_rate)
-    X_test, y_test = subsample(X_test_raw, y_test_raw, sample_rate)
+    X_train, y_train, X_test, y_test = data.load_split(idx_task, sample_rate)
+
+    if video:
+        _, y_train = subsample(X_train, y_train, 30)
+        _, y_test = subsample(X_test, y_test, 30)
+        X_train, y_train = match_lengths(X_train, y_train)
+        X_test, y_test = match_lengths(X_test, y_test)
+
 
     n_feat = data.n_features
     n_classes = data.n_classes
@@ -153,10 +159,10 @@ for idx_task in range(1, data.n_splits+1):
         elif model_type == 'icra':
             # Add structured model
             # skip = conv
-            conv = 100
+            conv = 10
             skip = 300
             model = models.LatentConvModel(n_latent=3, conv_len=conv, skip=skip, debug=True)
-            model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=False)
+            model.fit(X_train, y_train, n_iter=500, learning_rate=.1, pretrain=False)
 
             # Evaluate using structured model
             P_test = model.predict(X_test, inference="framewise")
@@ -202,7 +208,7 @@ for idx_task in range(1, data.n_splits+1):
             # save_predictions(dir_out_base+"sCNN", y_test, P_cnn_test, idx_task)
             save_predictions(dir_out_base+"stCNN", y_test, P_test, idx_task)
             save_predictions(dir_out_base+"seg", y_test, S_test, idx_task)
-            save_predictions(dir_out_base+"clf", clf_truth, clf_pred, idx_task)
+            # save_predictions(dir_out_base+"clf", clf_truth, clf_pred, idx_task)
 
         # ---- Viz predictions -----
         if 1:

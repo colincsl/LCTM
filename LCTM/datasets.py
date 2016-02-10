@@ -4,6 +4,22 @@ import scipy.ndimage as nd
 import scipy.io as sio
 from LCTM import utils
 
+def closest_file(fid):
+    # Fix occasional issues with extensions (e.g. X.mp4.mat)
+    basename = os.path.basename(fid)
+    dirname = os.path.dirname(fid)
+    dirfiles = os.listdir(dirname)
+    
+    if basename in dirfiles:
+        return fid
+    else:
+        basename = basename.split(".")[0]
+        files = [f for f in dirfiles if basename in f]
+        if len(files) > 0:
+            return dirname+"/"+files[0]
+        else:
+            print("Error: can't find file")
+
 class Dataset:
     name = ""
     features = ""
@@ -29,7 +45,7 @@ class Dataset:
         return None
 
     def get_files(self, idx_task=None):
-        if self.sep_splits:
+        if "Split_1" in os.listdir(self.dir_labels):
             files_features = np.sort(os.listdir(self.dir_labels+"/Split_{}/".format(idx_task)))
         else:
             files_features = np.sort(os.listdir(self.dir_labels))
@@ -50,12 +66,15 @@ class Dataset:
         files_features = self.get_files(idx_task)
 
         # Load data
-        if self.sep_splits:
-            Y_all = [ sio.loadmat( "{}/Split_{}/{}".format(self.dir_labels,idx_task,f) )["Y"].ravel() for f in files_features]
-            X_all = [ sio.loadmat( "{}/Split_{}/{}".format(self.dir_features,idx_task, f) )["X"].astype(np.float64) for f in files_features]
+        if "Split_1" in os.listdir(self.dir_labels):
+            Y_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(self.dir_labels,idx_task,f)) )["Y"].ravel() for f in files_features]
         else:
-            Y_all = [ sio.loadmat( "{}{}".format(self.dir_labels,f) )["Y"].ravel() for f in files_features]
-            X_all = [ sio.loadmat( "{}/{}".format(self.dir_features, f) )["X"].astype(np.float64) for f in files_features]
+            Y_all = [ sio.loadmat( closest_file("{}{}".format(self.dir_labels,f)) )["Y"].ravel() for f in files_features]
+
+        if "Split_1" in os.listdir(self.dir_features):
+            X_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(self.dir_features,idx_task, f)) )["X"].astype(np.float64) for f in files_features]
+        else:        
+            X_all = [ sio.loadmat( closest_file("{}/{}".format(self.dir_features, f)) )["X"].astype(np.float64) for f in files_features]
 
         # Make sure labels are sequential
         Y_all = utils.remap_labels(Y_all)
