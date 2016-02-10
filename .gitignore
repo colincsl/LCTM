@@ -1,3 +1,4 @@
 .DS_Store
 build
 */__pycache__
+LCTM/energies/__pycache__

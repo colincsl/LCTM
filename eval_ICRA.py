@@ -71,13 +71,12 @@ for k in metrics_:
 for idx_task in range(1, data.n_splits+1):	
 	
 	# Load Data
-	X_train, y_train, X_test, y_test = data.load_split(idx_task)
-	X_train, y_train = utils.subsample(X_train, y_train, sample_rate)
-	X_test, y_test = utils.subsample(X_test, y_test, sample_rate)
+	X_train, y_train, X_test, y_test = data.load_split(idx_task, sample_rate)
+	# X_train, X_test = data.load_auxillary(features, idx_task, sample_rate)
 
 	# ------------Model & Evaluation---------------------------
 	# Define and train model
-	# model = models.LatentChainModel(n_latent=1, skip=skip, debug=True)
+	# model = models.LatentChainModel(n_latent=3, skip=skip, debug=True)
 	model = models.LatentConvModel(n_latent=1, conv_len=conv_len, skip=skip, debug=True)
 	# model = models.SegmentalModel(debug=True)
 	model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=True)
@@ -112,7 +111,7 @@ for idx_task in range(1, data.n_splits+1):
 	avgs["edit_fr"] += [metrics.edit_score(P_test, y_test)]
 	avgs["edit_fi"] += [metrics.edit_score(P_test_filt, y_test)]
 	avgs["edit_s"] += [metrics.edit_score(P_test_seg, y_test)]
-
+	
 	# TODO: overlap score
 
 	# Midpoint precision/recall

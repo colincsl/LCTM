@@ -16,6 +16,17 @@ class Dataset:
         self.features = features
         self.sep_splits = sep_splits
 
+        # Setup directory and filenames
+        self.dir_features = self.feature_path(features)
+        self.dir_labels = self.label_path(features)        
+
+    def feature_path(self, features):
+        print("Error: Not implemented")
+        return None
+
+    def label_path(self, features=""):
+        print("Error: Not implemented")
+        return None
 
     def get_files(self, idx_task=None):
         if self.sep_splits:
@@ -27,13 +38,13 @@ class Dataset:
         # files_features = [f.replace(".mat", "") for f in files_features]
         return files_features
 
-    def load_split(self, idx_task):
+    def load_split(self, idx_task, sample_rate=1):
 
         # Get splits for this partion of data
         file_train = open(os.path.expanduser(self.base_dir+"splits/sequences/{}/train.txt".format(idx_task))).readlines()
-        file_train = [f.strip() for f in file_train]
         file_test = open( os.path.expanduser(self.base_dir+"splits/sequences/{}/test.txt".format(idx_task))).readlines()
-        file_test = [f.strip() for f in file_test]
+        file_train = [f.split(".")[0].strip() for f in file_train]
+        file_test = [f.split(".")[0].strip() for f in file_test]
 
         # Format the train/test split names
         files_features = self.get_files(idx_task)
@@ -56,6 +67,10 @@ class Dataset:
         if X_all[0].shape[0] > X_all[0].shape[1]:
             X_all = [x.T for x in X_all]
 
+        # Subsample the data
+        if sample_rate > 1:
+            X_all, Y_all = utils.subsample(X_all, Y_all, sample_rate)
+
         self.n_classes = len(np.unique(np.hstack(Y_all)))
         self.n_features = X_all[0].shape[0]
 
@@ -67,8 +82,21 @@ class Dataset:
         y_train = [Y_all[fid2idx[f]] for f in file_train if f in fid2idx]
         y_test = [Y_all[fid2idx[f]] for f in file_test if f in fid2idx]
 
+        if len(X_train)==0:
+            print("Error loading data")
+
         return X_train, y_train, X_test, y_test
         
+    def load_auxillary(self, features, idx_task=1, sample_rate=1):
+        # Setup directory and filenames
+        dir_features_tmp = self.dir_features
+        self.dir_features = os.path.expanduser(self.base_dir+"features/{}/".format(features))
+        
+        Z_train, _, Z_test, _ = self.load_split(idx_task, sample_rate=1)
+        self.dir_features = dir_features_tmp
+        
+        return Z_train, Z_test
+    
     
 class JIGSAWS(Dataset):
     n_splits = 7
@@ -77,15 +105,18 @@ class JIGSAWS(Dataset):
     def __init__(self, base_dir, features, sep_splits=False):
         Dataset.__init__(self, base_dir, features, sep_splits)
 
-        # Setup directory and filenames
-        self.dir_labels = os.path.expanduser(self.base_dir+"labels/sequences/Suturing/")
-        self.dir_features = os.path.expanduser(self.base_dir+"features/{}/".format(self.features))
+    def feature_path(self, features):
+        return os.path.expanduser(self.base_dir+"features/{}/".format(features))
+
+    def label_path(self, features=""):
+        return os.path.expanduser(self.base_dir+"labels/sequences/Suturing/")
 
     def fix2idx(self, files_features):
         if files_features[0].find(".mat"):
             return {files_features[i].replace(".mat",""):i for i in range(len(files_features))}
         else:
             return {files_features[i]:i for i in range(len(files_features))}
+
 
 class Salads(Dataset):
     n_splits = 5
@@ -94,12 +125,15 @@ class Salads(Dataset):
     def __init__(self, base_dir, features, sep_splits=False):
         Dataset.__init__(self, base_dir, features, sep_splits)
 
-        # Setup directory and filenames
-        self.dir_features = os.path.expanduser(self.base_dir+"features/{}/Split_1/".format(self.features))
-        self.dir_labels = os.path.expanduser(self.base_dir+"features/{}/Split_1/".format(self.features))
+    def feature_path(self, features):
+        return os.path.expanduser(self.base_dir+"features/{}/Split_1/".format(features))
+
+    def label_path(self, features=""):
+        return os.path.expanduser(self.base_dir+"features/{}/Split_1/".format(features))
 
     def fix2idx(self, files_features):
         return {files_features[i].replace("rgb-","").replace(".mat","").replace(".avi",""):i for i in range(len(files_features))}        
+
 
 class EndoVis(Dataset):
     n_splits = 7
@@ -108,9 +142,11 @@ class EndoVis(Dataset):
     def __init__(self, base_dir, features, sep_splits=False):
         Dataset.__init__(self, base_dir, features, sep_splits)
 
-        # Setup directory and filenames
-        self.dir_features = os.path.expanduser(self.base_dir+"features/{}/".format(self.features))
-        self.dir_labels = os.path.expanduser(self.base_dir+"features/{}/".format(self.features))
+    def feature_path(self, features):
+        return os.path.expanduser(self.base_dir+"features/{}/".format(features))
+
+    def label_path(self, features=""):
+        return os.path.expanduser(self.base_dir+"labels/sequences/")
 
     def fix2idx(self, files_features):
         return {files_features[i].replace(".mat",""):i for i in range(len(files_features))}

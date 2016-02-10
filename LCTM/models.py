@@ -99,7 +99,7 @@ class CoreModel:
             score = model.potentials[key].compute(model, Xi, score)
 
         if model.is_latent and (not is_training and not output_latent):
-            score = reduce_latent_states(score, model.n_latent, model.n_classes)
+            score = ssvm.reduce_latent_states(score, model.n_latent, model.n_classes)
 
         # Get predictions
         inference_type = model.inference_type if inference is None else inference
