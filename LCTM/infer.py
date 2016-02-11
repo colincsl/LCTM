@@ -1,7 +1,7 @@
 import numpy as np
 from numba import float64, jit, int16, boolean, int64
 
-@jit("float64[:,:](float64[:,:], float64[:,:], int16, float64[:], float64[:])")
+@jit("float64[:,:](float64[:,:], int16, float64[:,:], float64[:], float64[:])")
 def segmental_forward(x, max_segs, pw=None, start_prior=None, end_prior=None):
 	# Assumes segment function is additive: f(x)=sum_t'=t^t+d x_t'
 	T, n_classes = x.shape

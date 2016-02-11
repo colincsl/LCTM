@@ -100,7 +100,7 @@ for idx_task in range(1, data.n_splits+1):
     n_classes = data.n_classes
 
     # Preprocess VGG
-    if 1:
+    if 0:
         from sklearn.svm import LinearSVC
         svm = LinearSVC()
         svm.fit(np.hstack(X_train).T, np.hstack(y_train))
@@ -168,21 +168,23 @@ for idx_task in range(1, data.n_splits+1):
     elif model_type == 'icra':
         # Add structured model
         # skip = conv
-        conv = 1
+        conv = 10
         skip = 300
-        # model = models.LatentConvModel(n_latent=1, conv_len=conv, skip=skip, debug=True)
-        model = models.SegmentalModel(pretrained=False)
+        model = models.LatentConvModel(n_latent=1, conv_len=conv, skip=skip, debug=True)
+        # model = models.SegmentalModel(pretrained=False)
         model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=False)
         # model = models.PretrainedModel(skip=skip, debug=True)
         from LCTM import utils
         from LCTM.energies import pairwise 
-        y_tmp = [utils.segment_labels(y) for y in y_train]
-        pw = np.sum([pairwise.pw_cost(y, n_classes) for y in y_tmp], 0)
-        model.ws['pw'][pw<=0] = -9999
+        # y_tmp = [utils.segment_labels(y) for y in y_train]
+        # pw = np.sum([pairwise.pw_cost(y, n_classes) for y in y_tmp], 0)
+        # model.ws['pw'][pw<=0] = -9999
+
+        y_tmp = [utils.segment_labels(y) for y in y_test][0]
 
         # Evaluate using structured model
         P_test = model.predict(X_test, inference="framewise")
-        S_test = model.predict(X_test, inference="segmental")
+        S_test = model.predict(X_test, inference="segmental", known_order=y_tmp)
     
     # --------- DTW model ----------
     elif model_type =='dtw':

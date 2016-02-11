@@ -13,6 +13,7 @@ from LCTM.energies import priors
 from LCTM.energies import unary
 from LCTM.energies import pairwise as pw
 from LCTM.infer import segmental_inference
+from LCTM.infer_known_order import infer_known_ordering
 from LCTM import learn
 from LCTM import ssvm
 
@@ -65,7 +66,7 @@ class CoreModel:
             n_nodes = model.n_classes
         return n_nodes
 
-    def predict(model, Xi, Yi=None, is_training=False, output_latent=False, inference=None):
+    def predict(model, Xi, Yi=None, is_training=False, output_latent=False, inference=None, known_order=None):
         # This function is applicable to normal and latent models
         if type(Xi) is list:
             out = []
@@ -112,15 +113,18 @@ class CoreModel:
             path = nd.median_filter(path, model.filter_len)
 
         elif inference_type is "segmental":
-            assert hasattr(model, "max_segs"), "max_segs must be set"
-            # Check if there is a segmental pw.pairwise term:
-            # has_seg_pw = any([type(p) is pw.segmental_pairwise for p in model.potentials.values()])
-            seg_term = [p.name for p in model.potentials.values() if type(p) is pw.segmental_pairwise]
+
+            if known_order:
+                path = infer_known_ordering(score.T, known_order)
             
-            if len(seg_term) >= 1:
-                path = segmental_inference(score.T, model.max_segs, pw=model.ws[seg_term[0]])
             else:
-                path = segmental_inference(score.T, model.max_segs)
+                assert hasattr(model, "max_segs"), "max_segs must be set"
+                # Check if there is a segmental pw.pairwise term
+                seg_term = [p.name for p in model.potentials.values() if type(p) is pw.segmental_pairwise]                
+                if len(seg_term) >= 1:
+                    path = segmental_inference(score.T, model.max_segs, pw=model.ws[seg_term[0]])
+                else:
+                    path = segmental_inference(score.T, model.max_segs)
 
         return path 
 
