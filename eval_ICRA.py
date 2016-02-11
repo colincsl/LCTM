@@ -20,7 +20,6 @@ save_dir = expanduser("~/data/Results/")
 # base_dir = expanduser("~/Data/")
 # save_dir = expanduser("~/Data/Results/")
 
-
 # ------------------------------------------------------------------
 # If running from command line get split index number
 # Otherwise choose one of the splits manually
@@ -44,8 +43,8 @@ print("Setup: {}, split:{}, features:{}".format(dataset, idx_task, eval_idx))
 features = ["low", "mid", "high", "eval"][eval_idx] if dataset=="50Salads" else ""
 features = "WACV" if dataset=="JIGSAWS" else "accel/"+features
 
-if dataset == "JIGSAWS": data = datasets.JIGSAWS(base_dir, features)
-elif dataset == "50Salads": data = datasets.Salads(base_dir, features)
+if dataset == "JIGSAWS": data = datasets.JIGSAWS(base_dir)
+elif dataset == "50Salads": data = datasets.Salads(base_dir)
 else: print("Dataset not correctly specified")
 experiment_name = features + "_" + str(int(time.time()))
 
@@ -70,8 +69,8 @@ for k in metrics_:
 for idx_task in range(1, data.n_splits+1):	
 	
 	# Load Data
-	X_train, y_train, X_test, y_test = data.load_split(idx_task, sample_rate)
-	# X_train, X_test = data.load_auxillary(features, idx_task, sample_rate)
+	X_train, y_train, X_test, y_test = data.load_split(features, idx_task, sample_rate)
+	# X_train, X_test = data.load_split(features, idx_task, sample_rate)
 
 	# ------------Model & Evaluation---------------------------
 	# Define and train model

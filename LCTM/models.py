@@ -131,7 +131,6 @@ class CoreLatentModel(CoreModel):
         CoreModel.__init__(self, **kwargs)
         self.n_latent = n_latent
 
-
 class ChainModel(CoreModel):
     def __init__(self, skip=1, **kwargs):
         CoreModel.__init__(self, name="SC-Model", **kwargs)
@@ -161,7 +160,7 @@ class LatentChainModel(CoreLatentModel):
         # CoreLatentModel.__init__(self, n_latent, name="Latent Skip Chain Model", **kwargs)
         super(CoreLatentModel,self).__init__(name="Latent Skip Chain Model", **kwargs)
 
-        # self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
+        self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
         self.potentials["unary"] = data.framewise_unary()
         
         # if skip: self.potentials["pw2"] = pw.pairwise("pw2", skip*2)
@@ -176,15 +175,18 @@ class LatentConvModel(CoreModel):
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
 
 class SegmentalModel(CoreModel):
-    def __init__(self, skip=1, **kwargs):
-        CoreModel.__init__(self, name="SC-Model", **kwargs)
+    def __init__(self, pretrained=False, **kwargs):
+        CoreModel.__init__(self, name="Seg-Model", **kwargs)
 
-        self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
-        self.potentials["unary"] = data.framewise_unary()
+        # self.potentials["temporal_prior"] = prior.temporal_prior(length=30)
+        if pretrained:
+            self.potentials["pre"] = data.pretrained_unary()
+        else:
+            self.potentials["unary"] = data.framewise_unary()
         # self.potentials["start"] = start_prior()
         # self.potentials["end"] = end_prior()
         # self.potentials["pw_"] = pw.pairwise("pw", skip)
-        if skip: self.potentials["pw"] = pw.segmental_pw.pairwise(name="pw")
+        self.potentials["pw"] = pw.segmental_pairwise(name="pw")
 
 class PretrainedModel(CoreModel):
     def __init__(self, skip=1, **kwargs):
