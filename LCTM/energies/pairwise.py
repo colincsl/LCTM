@@ -23,6 +23,8 @@ def pw_cost(Yi, n_classes, skip=1):
     cost /= T-skip
     return cost
 
+# def segmental_pw_cost(Yi)
+
 @jit("float64[:,:](float64[:,:], float64[:,:], int32)")
 def compute_pw(scores, ws, skip=1): 
     T = scores.shape[1]

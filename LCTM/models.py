@@ -10,9 +10,9 @@ import matplotlib.pylab as plt
 # os.chdir("/Users/colin/CVPR2016/src/")
 from LCTM import weights
 from LCTM.energies import priors
-from LCTM.energies import data
+from LCTM.energies import unary
 from LCTM.energies import pairwise as pw
-from LCTM import infer
+from LCTM.infer import segmental_inference
 from LCTM import learn
 from LCTM import ssvm
 
@@ -117,10 +117,10 @@ class CoreModel:
             # has_seg_pw = any([type(p) is pw.segmental_pairwise for p in model.potentials.values()])
             seg_term = [p.name for p in model.potentials.values() if type(p) is pw.segmental_pairwise]
             
-            if len(seg_term) > 1:
-                path = infer.segmental_inference(score.T, model.max_segs, pw=model.ws[seg_term])
+            if len(seg_term) >= 1:
+                path = segmental_inference(score.T, model.max_segs, pw=model.ws[seg_term[0]])
             else:
-                path = infer.segmental_inference(score.T, model.max_segs)
+                path = segmental_inference(score.T, model.max_segs)
 
         return path 
 
@@ -137,7 +137,7 @@ class ChainModel(CoreModel):
 
         # self.potentials["class_prior"] = class_prior()
         # self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
-        self.potentials["unary"] = data.framewise_unary()
+        self.potentials["unary"] = unary.framewise_unary()
         
         # self.potentials["pw2"] = pw.pairwise("pw2", skip*2)
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
@@ -149,7 +149,7 @@ class ConvModel(CoreModel):
         self.debug = debug
 
         # self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
-        self.potentials["conv"] = data.conv_unary(conv_len=conv_len)
+        self.potentials["conv"] = unary.conv_unary(conv_len=conv_len)
         # self.potentials["class_prior"] = class_prior()
         # self.potentials["pw2"] = pw.pairwise("pw2", skip*2)
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
@@ -161,7 +161,7 @@ class LatentChainModel(CoreLatentModel):
         super(CoreLatentModel,self).__init__(name="Latent Skip Chain Model", **kwargs)
 
         self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
-        self.potentials["unary"] = data.framewise_unary()
+        self.potentials["unary"] = unary.framewise_unary()
         
         # if skip: self.potentials["pw2"] = pw.pairwise("pw2", skip*2)
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
@@ -171,18 +171,18 @@ class LatentConvModel(CoreModel):
         CoreLatentModel.__init__(self, n_latent, name="Latent Convolutional Model", **kwargs)
 
         # self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)        
-        self.potentials["conv"] = data.conv_unary(conv_len=conv_len)
+        self.potentials["conv"] = unary.conv_unary(conv_len=conv_len)
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
 
 class SegmentalModel(CoreModel):
     def __init__(self, pretrained=False, **kwargs):
         CoreModel.__init__(self, name="Seg-Model", **kwargs)
 
-        # self.potentials["temporal_prior"] = prior.temporal_prior(length=30)
+        self.potentials["temporal_prior"] = priors.temporal_prior(length=30)
         if pretrained:
-            self.potentials["pre"] = data.pretrained_unary()
+            self.potentials["pre"] = unary.pretrained_unary()
         else:
-            self.potentials["unary"] = data.framewise_unary()
+            self.potentials["unary"] = unary.framewise_unary()
         # self.potentials["start"] = start_prior()
         # self.potentials["end"] = end_prior()
         # self.potentials["pw_"] = pw.pairwise("pw", skip)
@@ -192,7 +192,7 @@ class PretrainedModel(CoreModel):
     def __init__(self, skip=1, **kwargs):
         CoreModel.__init__(self, name="Pretrained-Model", **kwargs)
 
-        self.potentials["pre"] = data.pretrained_unary()
+        self.potentials["pre"] = unary.pretrained_unary()
         self.potentials["pw"] = pw.pairwise(skip=skip)
 
 if 0:

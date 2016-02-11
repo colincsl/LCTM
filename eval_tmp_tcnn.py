@@ -17,11 +17,12 @@ from LCTM import metrics, models, datasets
 from LCTM.dtw import DTW
 from LCTM.infer import segmental_inference
 from LCTM.utils import subsample, match_lengths, mask_data, unmask, save_predictions, imshow_
+
 # Directories and filename
-base_dir = expanduser("~/data/")
-save_dir = expanduser("~/data/Results/")
-# base_dir = expanduser("~/Data/")
-# save_dir = expanduser("~/Data/Results/")
+# base_dir = expanduser("~/data/")
+# save_dir = expanduser("~/data/Results/")
+base_dir = expanduser("~/Data/")
+save_dir = expanduser("~/Data/Results/")
 
 
 # ------------------------------------------------------------------
@@ -39,10 +40,9 @@ except:
     idx_task = 1
     # idx_task = 'youtube'
     save = [False, True][0]
-
-video = [False, True][1]
 print("tCNN: ({}, {}, {})".format(dataset, eval_idx, idx_task))
 
+video = [False, True][0]
 if video:
     feature_set = "_"+["low", "mid", "high", "eval"][eval_idx] if dataset=="50Salads" else ""
     # features = "cnn_rgb_"+"Thurs12_sigmoid"+feature_set
@@ -67,7 +67,7 @@ else:
 save_name = ""+feature_set
 n_nodes = 64
 nb_epoch = 15
-sample_rate = 1
+sample_rate = 30
 model_type = ['cvpr', 'icra', 'dtw'][1]
 
 if dataset == "JIGSAWS": conv = 200
@@ -170,10 +170,15 @@ for idx_task in range(1, data.n_splits+1):
         # skip = conv
         conv = 1
         skip = 300
-        model = models.LatentConvModel(n_latent=1, conv_len=conv, skip=skip, debug=True)
-        # model = models.SegmentalModel(pretrained=True)
+        # model = models.LatentConvModel(n_latent=1, conv_len=conv, skip=skip, debug=True)
+        model = models.SegmentalModel(pretrained=False)
         model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=False)
         # model = models.PretrainedModel(skip=skip, debug=True)
+        from LCTM import utils
+        from LCTM.energies import pairwise 
+        y_tmp = [utils.segment_labels(y) for y in y_train]
+        pw = np.sum([pairwise.pw_cost(y, n_classes) for y in y_tmp], 0)
+        model.ws['pw'][pw<=0] = -9999
 
         # Evaluate using structured model
         P_test = model.predict(X_test, inference="framewise")
