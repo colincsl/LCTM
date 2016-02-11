@@ -72,7 +72,7 @@ class CoreModel:
             out = []
             for i in range(len(Xi)):
                 Yi_ = None if Yi is None else Yi[i]
-                out += [model.predict(Xi[i], Yi_, is_training, output_latent, inference)]
+                out += [model.predict(Xi[i], Yi_, is_training, output_latent, inference, known_order)]
             return out
 
         # Check that Xi is of size FxT
@@ -114,9 +114,8 @@ class CoreModel:
 
         elif inference_type is "segmental":
 
-            if known_order:
+            if known_order is not None:
                 path = infer_known_ordering(score.T, known_order)
-            
             else:
                 assert hasattr(model, "max_segs"), "max_segs must be set"
                 # Check if there is a segmental pw.pairwise term

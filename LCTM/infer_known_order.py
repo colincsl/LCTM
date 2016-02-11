@@ -17,7 +17,6 @@ def segmental_forward_known(x, segs):
         # Compute scores per timestep
         for t in range(1, T):
             c = segs[m]
-            c_prev = segs[m-1]
 
             # Score for staying in same segment
             best_same = scores[m, t-1]
