@@ -49,7 +49,7 @@ def unmask(X, M):
 
 def match_lengths(X,Y):
 	# Check lengths of data and labels match
-	if X[0].ndim==1 or (X[0].shape[0] > X[0].shape[1]):
+	if X[0].ndim==1 or (X[0].shape[1] == Y[0].shape[0]):
 		for i in range(len(Y)):
 			length = min(X[i].shape[1], Y[i].shape[0])
 			X[i] = X[i][:,:length]

@@ -19,10 +19,10 @@ from LCTM.infer import segmental_inference
 from LCTM.utils import subsample, match_lengths, mask_data, unmask, save_predictions, imshow_
 
 # Directories and filename
-# base_dir = expanduser("~/data/")
-# save_dir = expanduser("~/data/Results/")
-base_dir = expanduser("~/Data/")
-save_dir = expanduser("~/Data/Results/")
+base_dir = expanduser("~/data/")
+save_dir = expanduser("~/data/Results/")
+# base_dir = expanduser("~/Data/")
+# save_dir = expanduser("~/Data/Results/")
 
 
 # ------------------------------------------------------------------
@@ -42,7 +42,7 @@ except:
     save = [False, True][0]
 print("tCNN: ({}, {}, {})".format(dataset, eval_idx, idx_task))
 
-video = [False, True][0]
+video = [False, True][1]
 if video:
     feature_set = "_"+["low", "mid", "high", "eval"][eval_idx] if dataset=="50Salads" else ""
     # features = "cnn_rgb_"+"Thurs12_sigmoid"+feature_set
@@ -51,9 +51,9 @@ if video:
     # features = "cnn_rgb_"+"Tues_sig_3x3"+feature_set
     # features = "cnn_rgb_"+"CVPR_"+["actions", "tools", "attributes"][0]+feature_set
     # features = "cnn_rgb_"+"CVPR_"+["actions", "tools", "attributes"][0]+"_no_motion"+feature_set
-    # features = "cnn_rgb_"+"MICCAI_attributes_Feb4"+feature_set
     # features = "cnn_rgb_"+"Tues_sig_4x4"+feature_set # EndoVis
-    features = "vgg_16"+feature_set
+    # features = "cnn_rgb_"+"MICCAI_attributes_Feb4"+feature_set
+    features = "vgg_16"
 else:
     feature_set = ["low", "mid", "high", "eval"][eval_idx] if dataset=="50Salads" else ""
     if dataset=="JIGSAWS":
@@ -67,7 +67,7 @@ else:
 save_name = ""+feature_set
 n_nodes = 64
 nb_epoch = 15
-sample_rate = 30
+sample_rate = 1 if video else 30
 model_type = ['cvpr', 'icra', 'dtw'][1]
 
 if dataset == "JIGSAWS": conv = 200
@@ -100,7 +100,7 @@ for idx_task in range(1, data.n_splits+1):
     n_classes = data.n_classes
 
     # Preprocess VGG
-    if 0:
+    if features == "vgg_16":
         from sklearn.svm import LinearSVC
         svm = LinearSVC()
         svm.fit(np.hstack(X_train).T, np.hstack(y_train))
@@ -168,7 +168,7 @@ for idx_task in range(1, data.n_splits+1):
     elif model_type == 'icra':
         # Add structured model
         # skip = conv
-        conv = 10
+        conv = 100
         skip = 300
         model = models.LatentConvModel(n_latent=1, conv_len=conv, skip=skip, debug=True)
         # model = models.SegmentalModel(pretrained=False)
