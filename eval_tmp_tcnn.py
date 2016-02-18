@@ -12,17 +12,17 @@ from keras.utils import np_utils
 # From CVPR16 folder
 # from models import *
 
-os.chdir(expanduser("~/libs/Latent-Convolutional-Action-Primitives/"))
+os.chdir(expanduser("~/libs/LCTM/"))
 from LCTM import metrics, models, datasets
 from LCTM.dtw import DTW
 from LCTM.infer import segmental_inference
 from LCTM.utils import subsample, match_lengths, mask_data, unmask, save_predictions, imshow_
 
 # Directories and filename
-base_dir = expanduser("~/data/")
-save_dir = expanduser("~/data/Results/")
-# base_dir = expanduser("~/Data/")
-# save_dir = expanduser("~/Data/Results/")
+# base_dir = expanduser("~/data/")
+# save_dir = expanduser("~/data/Results/")
+base_dir = expanduser("~/Data/")
+save_dir = expanduser("~/Data/Results/")
 
 
 # ------------------------------------------------------------------
@@ -50,10 +50,10 @@ if video:
     # features_flow = "cnn_flow_"+"Thurs12_sigmoid"+feature_set
     # features = "cnn_rgb_"+"Tues_sig_3x3"+feature_set
     # features = "cnn_rgb_"+"CVPR_"+["actions", "tools", "attributes"][0]+feature_set
-    # features = "cnn_rgb_"+"CVPR_"+["actions", "tools", "attributes"][0]+"_no_motion"+feature_set
+    features = "cnn_rgb_"+"CVPR_"+["actions", "tools", "attributes"][1]+"_no_motion"+feature_set
     # features = "cnn_rgb_"+"Tues_sig_4x4"+feature_set # EndoVis
     # features = "cnn_rgb_"+"MICCAI_attributes_Feb4"+feature_set
-    features = "vgg_16"
+    # features = "vgg_16" 
 else:
     feature_set = ["low", "mid", "high", "eval"][eval_idx] if dataset=="50Salads" else ""
     if dataset=="JIGSAWS":
@@ -68,7 +68,8 @@ save_name = ""+feature_set
 n_nodes = 64
 nb_epoch = 15
 sample_rate = 1 if video else 30
-model_type = ['cvpr', 'icra', 'dtw'][1]
+# sample_rate = 1
+model_type = ['cvpr', 'icra', 'dtw'][2]
 
 if dataset == "JIGSAWS": conv = 200
 elif dataset == "50Salads": conv = 200
@@ -100,7 +101,7 @@ for idx_task in range(1, data.n_splits+1):
     n_classes = data.n_classes
 
     # Preprocess VGG
-    if features == "vgg_16":
+    if 1 or features == "vgg_16":
         from sklearn.svm import LinearSVC
         svm = LinearSVC()
         svm.fit(np.hstack(X_train).T, np.hstack(y_train))
@@ -168,14 +169,15 @@ for idx_task in range(1, data.n_splits+1):
     elif model_type == 'icra':
         # Add structured model
         # skip = conv
-        conv = 100
-        skip = 300
-        model = models.LatentConvModel(n_latent=1, conv_len=conv, skip=skip, debug=True)
+        # conv = 100
+        skip = 0
+        conv = 1
+        model = models.LatentConvModel(n_latent=3, conv_len=conv, skip=skip, prior=True, debug=True)
         # model = models.SegmentalModel(pretrained=False)
-        model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=False)
+        model.fit(X_train, y_train, n_iter=300, learning_rate=.1, pretrain=True)
         # model = models.PretrainedModel(skip=skip, debug=True)
-        from LCTM import utils
-        from LCTM.energies import pairwise 
+        # from LCTM import utils
+        # from LCTM.energies import pairwise
         # y_tmp = [utils.segment_labels(y) for y in y_train]
         # pw = np.sum([pairwise.pw_cost(y, n_classes) for y in y_tmp], 0)
         # model.ws['pw'][pw<=0] = -9999
@@ -194,11 +196,13 @@ for idx_task in range(1, data.n_splits+1):
             dists, preds = [], []
             for j in range(len(X_train)):
                 d, c = DTW(X_train[j], X_test[i], output_correspondences=True)
+                d /= X_train[j].shape[1]
                 dists += [d]
                 preds += [y_train[j][c]]
                 scores_tmp[idx_task] += [np.mean(y_test[0] == y_train[j][c])]
             idx_best = np.argmin(dists)
             S_test += [preds[idx_best]]
+        P_test = S_test
     else:
         print("Error: model not defined")
 
@@ -212,7 +216,7 @@ for idx_task in range(1, data.n_splits+1):
     acc_clf = metrics.classification_accuracy(P_test, y_test)
     print("FW: {:.04}".format(acc_tCNN))
     print("Seg: {:.04}".format(acc_seg))
-    print("Clf: {:.04}".format(acc_clf))
+    # print("Clf: {:.04}".format(acc_clf))
     print()     
     avgs[idx_task]= acc_tCNN
     avgs_seg[idx_task]= acc_seg
@@ -237,16 +241,16 @@ for idx_task in range(1, data.n_splits+1):
             tmp = np.vstack([y_test[i][:,None].T, P_test[i][:,None].T, S_test[i][:,None].T])
             imshow_(tmp)
             plt.xticks([])
-    
+
     # ---- Viz weights -----
     if 0:
         # Output weights at the first layer
         plt.figure(2, figsize=(10,10))
-        ws = model.get_weights()
+        ws = model.get_weights()[0]
         for i in range(min(36, len(ws[0]))):
             plt.subplot(6,6,i+1)
             # imshow_(model.get_weights()[0][i][:,:,0]+model.get_weights()[1][i])
-            imshow_(ws[0][i][:,:,0])
+            imshow_(ws[i][:,:,0])
 
     # ---- Viz confusion -----
     if 0:

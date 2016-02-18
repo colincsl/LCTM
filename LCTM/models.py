@@ -66,6 +66,12 @@ class CoreModel:
             n_nodes = model.n_classes
         return n_nodes
 
+    def get_weights(model):
+        return list(model.ws.values())
+
+    def predict_latent(model, Xi):
+        return model.predict(Xi, output_latent=True)
+
     def predict(model, Xi, Yi=None, is_training=False, output_latent=False, inference=None, known_order=None):
         # This function is applicable to normal and latent models
         if type(Xi) is list:
@@ -163,17 +169,17 @@ class LatentChainModel(CoreLatentModel):
         # CoreLatentModel.__init__(self, n_latent, name="Latent Skip Chain Model", **kwargs)
         super(CoreLatentModel,self).__init__(name="Latent Skip Chain Model", **kwargs)
 
-        self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)
+        self.potentials["prior.temporal_prior"] = priors.temporal_prior(length=30)
         self.potentials["unary"] = unary.framewise_unary()
         
         # if skip: self.potentials["pw2"] = pw.pairwise("pw2", skip*2)
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
 
 class LatentConvModel(CoreModel):
-    def __init__(self, n_latent, conv_len=100, skip=1, **kwargs):
+    def __init__(self, n_latent, conv_len=100, skip=1, prior=False, **kwargs):
         CoreLatentModel.__init__(self, n_latent, name="Latent Convolutional Model", **kwargs)
 
-        # self.potentials["prior.temporal_prior"] = prior.temporal_prior(length=30)        
+        if prior: self.potentials["temporal_prior"] = priors.temporal_prior(length=30)
         self.potentials["conv"] = unary.conv_unary(conv_len=conv_len)
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
 

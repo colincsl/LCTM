@@ -18,21 +18,24 @@ def segmental_forward_known(x, segs):
         for t in range(1, T):
             c = segs[m]
 
-            # Score for staying in same segment
-            best_same = scores[m, t-1]
-            # Score for coming from previous segment
+            # Score for staying in same segment or coming from previous
+            best_same = scores[m,   t-1]
             best_prev = scores[m-1, t-1]
 
-            # Add cost of curent frame to best previous cost
+            # Add cost of curent frame to best incoming cost
             if best_same > best_prev:
                 scores[m, t] = best_same + x[t, c]
+                # print(m, t)
             else:
                 scores[m, t] = best_prev + x[t, c]
+                # print(m, t)
 
     # Set nonzero entries to 0 for visualization
     scores[scores<0] = 0
 
     return scores
+
+# scores = segmental_forward_known(x, segs)
 
 
 @jit("int16[:,:](float64[:,:], int32[:])")
@@ -53,7 +56,7 @@ def segmental_backward_known(scores, segs):
         if score_prev >= score_same:
             next_class = segs[m-1]
             seq_c += [next_class]
-            seq_t += [t]
+            seq_t += [t-1]
             m -= 1
 
             if m == 0:

@@ -7,11 +7,11 @@ import cv2
 from numba import jit, int64
 
 # ------------- Visualization -------------
-def imshow_(x):
+def imshow_(x, **kwargs):
 	if x.ndim == 2:
-		plt.imshow(x, interpolation="nearest")
+		plt.imshow(x, interpolation="nearest", **kwargs)
 	elif x.ndim == 1:
-		plt.imshow(x[:,None].T, interpolation="nearest")
+		plt.imshow(x[:,None].T, interpolation="nearest", **kwargs)
 		plt.yticks([])
 	plt.axis("tight")
 
