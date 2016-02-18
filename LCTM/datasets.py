@@ -4,7 +4,7 @@ import scipy.ndimage as nd
 import scipy.io as sio
 from LCTM import utils
 
-def closest_file(fid):
+def closest_file(fid, extension=".mat"):
     # Fix occasional issues with extensions (e.g. X.mp4.mat)
     basename = os.path.basename(fid)
     dirname = os.path.dirname(fid)
@@ -15,6 +15,8 @@ def closest_file(fid):
     else:
         basename = basename.split(".")[0]
         files = [f for f in dirfiles if basename in f]
+        if extension is not None:
+            files = [f for f in files if extension in f]
         if len(files) > 0:
             return dirname+"/"+files[0]
         else:
@@ -66,7 +68,7 @@ class Dataset:
             Y_all = [ sio.loadmat( closest_file("{}{}".format(dir_labels,f)) )["Y"].ravel() for f in files_features]
 
         if "Split_1" in os.listdir(dir_features):
-            X_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(dir_features,idx_task, f)) )["X"].astype(np.float64) for f in files_features]
+            X_all = [ sio.loadmat( closest_file("{}Split_{}/{}".format(dir_features,idx_task, f)) )["X"].astype(np.float64) for f in files_features]
         else:        
             X_all = [ sio.loadmat( closest_file("{}/{}".format(dir_features, f)) )["X"].astype(np.float64) for f in files_features]
         # Make sure labels are sequential
