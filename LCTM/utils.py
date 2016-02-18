@@ -47,9 +47,9 @@ def unmask(X, M):
 	else:
 		return [X[i][:,M[i].flatten()>0] for i in range(len(X))]
 
-def match_lengths(X,Y):
+def match_lengths(X,Y, n_feat):
 	# Check lengths of data and labels match
-	if X[0].ndim==1 or (X[0].shape[1] == Y[0].shape[0]):
+	if X[0].ndim==1 or (X[0].shape[0] == n_feat):
 		for i in range(len(Y)):
 			length = min(X[i].shape[1], Y[i].shape[0])
 			X[i] = X[i][:,:length]
@@ -160,8 +160,9 @@ def check_images_available(x_uri, y, uri_data):
 			no_file += [i]
 	x_uri = np.array([x_uri[i] 	for i in range(len(x_uri)) if i not in no_file])
 	y 	= np.array([y[i] 		for i in range(len(y)) if i not in no_file])
-
-	print("Missing #", len(no_file))
+	
+	if len(no_file)>0:
+		print("Missing #", len(no_file))
 
 	return x_uri, y
 
