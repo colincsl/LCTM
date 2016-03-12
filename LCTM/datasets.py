@@ -47,7 +47,7 @@ class Dataset:
         # files_features = [f.replace(".mat", "") for f in files_features]
         return files_features
 
-    def load_split(self, features="", idx_task=None, sample_rate=1):
+    def load_split(self, features="", idx_task=None, feature_type="X", sample_rate=1):
         # Setup directory and filenames
         dir_features = self.feature_path(features)
         dir_labels = self.label_path(features)
@@ -68,14 +68,14 @@ class Dataset:
             Y_all = [ sio.loadmat( closest_file("{}{}".format(dir_labels,f)) )["Y"].ravel() for f in files_features]
 
         if "Split_1" in os.listdir(dir_features):
-            X_all = [ sio.loadmat( closest_file("{}Split_{}/{}".format(dir_features,idx_task, f)) )["X"].astype(np.float64) for f in files_features]
+            X_all = [ sio.loadmat( closest_file("{}Split_{}/{}".format(dir_features,idx_task, f)) )[feature_type].astype(np.float64) for f in files_features]
         else:        
-            X_all = [ sio.loadmat( closest_file("{}/{}".format(dir_features, f)) )["X"].astype(np.float64) for f in files_features]
+            X_all = [ sio.loadmat( closest_file("{}/{}".format(dir_features, f)) )[feature_type].astype(np.float64) for f in files_features]
         # Make sure labels are sequential
         Y_all = utils.remap_labels(Y_all)
 
-        if self.name == "50Salads":
-            Y_all = [nd.median_filter(y, 300) for y in Y_all]
+        # if self.name == "50Salads":
+        #     Y_all = [nd.median_filter(y, 300) for y in Y_all]
 
         # Make sure axes are correct (FxT not TxF for F=feat, T=time)
         if X_all[0].shape[0]!=X_all[1].shape[0]:
@@ -101,19 +101,19 @@ class Dataset:
 
         return X_train, y_train, X_test, y_test
         
-    def load_auxillary(self, features, idx_task=1, sample_rate=1):
+    def load_auxillary(self, features, idx_task=1, feature_type="X", sample_rate=1):
         # Setup directory and filenames
         # dir_features_tmp = self.dir_features
         # self.dir_features = os.path.expanduser(self.base_dir+"features/{}/".format(features))
         
-        Z_train, _, Z_test, _ = self.load_split(features, idx_task, sample_rate=sample_rate)
+        Z_train, _, Z_test, _ = self.load_split(features, idx_task, feature_type=feature_type, sample_rate=sample_rate)
         # self.dir_features = dir_features_tmp
         
         return Z_train, Z_test
     
     
 class JIGSAWS(Dataset):
-    n_splits = 7
+    n_splits = 8
     name = "JIGSAWS"
 
     def __init__(self, *args):
@@ -152,6 +152,20 @@ class EndoVis(Dataset):
 
     def label_path(self, features=""):
         return os.path.expanduser(self.base_dir+"labels/sequences/")
+
+    def fix2idx(self, files_features):
+        return {files_features[i].replace(".mat",""):i for i in range(len(files_features))}
+
+class EndoTube(Dataset):
+    n_splits = 5
+    name = "EndoTube"
+
+    def __init__(self, *args):
+        Dataset.__init__(self, *args)
+
+    def label_path(self, features=""):
+        # return os.path.expanduser(self.base_dir+"labels/sequences/")
+        return os.path.expanduser(self.base_dir+"features/{}/".format(features))
 
     def fix2idx(self, files_features):
         return {files_features[i].replace(".mat",""):i for i in range(len(files_features))}

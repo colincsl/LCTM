@@ -66,11 +66,40 @@ class CoreModel:
             n_nodes = model.n_classes
         return n_nodes
 
-    def get_weights(model):
-        return list(model.ws.values())
+    def get_weights(model, name=None):
+        if name is None:
+            return list(model.ws.values())
+        else:
+            return model.ws[name]
 
     def predict_latent(model, Xi):
         return model.predict(Xi, output_latent=True)
+
+    def decision_function(model, Xi):
+        # This function is applicable to normal and latent models
+        if type(Xi) is list:
+            return [model.decision_function(Xi[i]) for i in range(len(Xi))]
+
+        # Check that Xi is of size FxT
+        if Xi.shape[0] > Xi.shape[0]:
+            Xi = Xi.T
+
+        _, n_timesteps = Xi.shape
+        n_nodes = model.n_nodes
+
+        # Initialize score
+        score = np.zeros([n_nodes, n_timesteps], np.float64)
+
+        # Add potentials to score
+        for key in model.potentials:
+            score = model.potentials[key].compute(model, Xi, score)
+
+        # Reduce latent states
+        if model.is_latent:
+            score = ssvm.reduce_latent_states(score, model.n_latent, model.n_classes)
+
+        return score
+
 
     def predict(model, Xi, Yi=None, is_training=False, output_latent=False, inference=None, known_order=None):
         # This function is applicable to normal and latent models
@@ -109,7 +138,7 @@ class CoreModel:
             score = ssvm.reduce_latent_states(score, model.n_latent, model.n_classes)
 
         # Get predictions
-        inference_type = model.inference_type if inference is None else inference
+        inference_type = inference if inference is not None else model.inference_type
         if inference_type is "framewise":
             path = score.argmax(0)
 
@@ -118,7 +147,9 @@ class CoreModel:
             path = score.argmax(0)
             path = nd.median_filter(path, model.filter_len)
 
-        elif inference_type is "segmental":
+        elif "segmental" in inference_type:
+            normalized = True if "normalized" in inference_type else False
+
 
             if known_order is not None:
                 path = infer_known_ordering(score.T, known_order)
@@ -127,9 +158,9 @@ class CoreModel:
                 # Check if there is a segmental pw.pairwise term
                 seg_term = [p.name for p in model.potentials.values() if type(p) is pw.segmental_pairwise]                
                 if len(seg_term) >= 1:
-                    path = segmental_inference(score.T, model.max_segs, pw=model.ws[seg_term[0]])
+                    path = segmental_inference(score.T, model.max_segs, pw=model.ws[seg_term[0]], normalized=normalized)
                 else:
-                    path = segmental_inference(score.T, model.max_segs)
+                    path = segmental_inference(score.T, model.max_segs, normalized=normalized)
 
         return path 
 

@@ -47,7 +47,7 @@ def _traceback(D):
 
 # @jit("(float32, int32[:])(float32[:,:], float32[:,:], float32)")
 @autojit
-def DTW(x, y, max_value=np.inf, output_correspondences=False):
+def DTW(x, y, max_value=np.inf, output_correspondences=False, output_costs=False):
     # Should be of shape FxT
     Tx = x.shape[1]
     Ty = y.shape[1]
@@ -77,12 +77,28 @@ def DTW(x, y, max_value=np.inf, output_correspondences=False):
             ty += 1
         tx += 1
 
+    out = [cost[-1,-1]]
     if output_correspondences:
         c = _traceback(cost)
-        return cost[-1,-1], c
-    else:
-        return cost[-1,-1]
+        out += [c]
+    if output_costs:
+        cost[np.isinf(cost)] = 0
+        out += [cost]
 
+    return out
+
+# path = coors[0]
+# table = tables[0]
+
+@autojit
+def draw_path(table, path):
+    table_new = table.copy()
+    max_val = table.max()
+    for i in range(len(path)):
+        table_new[path[i], i] = max_val
+        if path[i]>0: table_new[path[i]-1, i] = max_val
+        # if path[i]<table.shape[1]-1: table_new[path[i]+1, i] = max_val
+    return table_new
 
 
 # def DTW(x, y, max_value=np.inf):

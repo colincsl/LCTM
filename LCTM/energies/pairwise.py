@@ -23,7 +23,9 @@ def pw_cost(Yi, n_classes, skip=1):
     cost /= T-skip
     return cost
 
-# def segmental_pw_cost(Yi)
+def segmental_pw_cost(Yi, n_classes, skip=1):
+    Yi_ = utils.segment_labels(Yi)
+    return pw_cost(Yi_, n_classes, skip)
 
 @jit("float64[:,:](float64[:,:], float64[:,:], int32)")
 def compute_pw(scores, ws, skip=1): 
@@ -68,8 +70,7 @@ class segmental_pairwise(CorePotential):
         # return np.eye(model.n_classes, dtype=np.float64)
     
     def cost_fcn(self, model, Xi, Yi):
-        Yi_split = utils.segment_labels(Yi)
-        return pw_cost(Yi_split, model.n_classes)
+        return segmental_pw_cost(Yi, model.n_classes)
 
     def compute(self, model, Xi, score):
         # We're going to add this into segmental inference... so keep cost the same

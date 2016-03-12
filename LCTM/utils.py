@@ -6,6 +6,8 @@ import scipy.io as sio
 import cv2
 from numba import jit, int64
 
+plt.rcParams['figure.figsize'] = [10.,10.]
+
 # ------------- Visualization -------------
 def imshow_(x, **kwargs):
 	if x.ndim == 2:
