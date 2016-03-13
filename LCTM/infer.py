@@ -42,7 +42,7 @@ def segmental_forward(x, max_segs, pw=None, start_prior=None, end_prior=None):
 	# 	scores[-1] += end_prior.T
 
 	# Set nonzero entries to 0 for visualization
-	scores[scores<0] = 0
+	# scores[scores<0] = 0
 
 	return scores
 
@@ -162,7 +162,7 @@ def segmental_forward_normalized(x, max_segs, pw=None):
 				scores[m, t, c] = best_score
 
 	# Set nonzero entries to 0 for visualization
-	scores[scores<0] = 0
+	# scores[scores<0] = 0
 
 	return scores	
 
