@@ -215,25 +215,22 @@ class LatentConvModel(CoreModel):
         if skip: self.potentials["pw"] = pw.pairwise(skip, name="pw")
 
 class SegmentalModel(CoreModel):
-    def __init__(self, pretrained=False, **kwargs):
+    def __init__(self, pretrained=False, prior=0, pairwise=True, **kwargs):
         CoreModel.__init__(self, name="Seg-Model", **kwargs)
 
-        self.potentials["temporal_prior"] = priors.temporal_prior(length=30)
-        if pretrained:
-            self.potentials["pre"] = unary.pretrained_unary()
-        else:
-            self.potentials["unary"] = unary.framewise_unary()
-        # self.potentials["start"] = start_prior()
-        # self.potentials["end"] = end_prior()
-        # self.potentials["pw_"] = pw.pairwise("pw", skip)
-        self.potentials["pw"] = pw.segmental_pairwise(name="pw")
+        if prior: self.potentials["prior"] = priors.temporal_prior(length=prior, name="prior")
+        if pretrained: self.potentials["pre"] = unary.pretrained_unary()
+        else: self.potentials["unary"] = unary.framewise_unary()
+        if pairwise: self.potentials["seg_pw"] = pw.segmental_pairwise(name="seg_pw")
 
 class PretrainedModel(CoreModel):
-    def __init__(self, skip=1, **kwargs):
+    def __init__(self, skip=0, prior=0, segmental=False, **kwargs):
         CoreModel.__init__(self, name="Pretrained-Model", **kwargs)
 
+        if prior: self.potentials["prior"] = priors.temporal_prior(length=prior, name="prior")
         self.potentials["pre"] = unary.pretrained_unary()
-        self.potentials["pw"] = pw.pairwise(skip=skip)
+        if skip: self.potentials["pw"] = pw.pairwise(skip=skip)
+        if segmental: self.potentials["seg_pw"] = pw.segmental_pairwise(name="seg_pw")
 
 if 0:
     Xi = X_test[0]

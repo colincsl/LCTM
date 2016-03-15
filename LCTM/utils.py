@@ -105,6 +105,12 @@ def segment_intervals(Yi):
 	intervals = [(idxs[i],idxs[i+1]) for i in range(len(idxs)-1)]
 	return intervals
 
+def segment_lengths(Yi):
+	idxs = [0] + (np.nonzero(np.diff(Yi))[0]+1).tolist() + [len(Yi)]
+	intervals = [(idxs[i+1]-idxs[i]) for i in range(len(idxs)-1)]
+	return np.array(intervals)
+
+
 @jit("int64[:](int64[:], int64)")
 def partition_latent_labels(Yi, n_latent):
     if n_latent == 1:

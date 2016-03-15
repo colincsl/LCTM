@@ -25,43 +25,95 @@ def classification_accuracy(P, Y):
         return clf_(P, Y)
 
 
+# @jit("float64(int64[:], int64[:])")
+# def edit_(p,y):
+#     m_row = len(p)    
+#     n_col = len(y)
+#     D = np.zeros([m_row+1, n_col+1], np.float)
+#     for i in range(m_row+1):
+#         D[i,0] = i
+#     for i in range(n_col+1):
+#         D[0,i] = i    
+
+#     for j in range(1, n_col+1):
+#         for i in range(1, m_row+1):
+#             if  y[j-1]==p[i-1]:
+#                 D[i,j] = D[i-1,j-1]
+#             else:
+#                 D[i,j] = min(D[i-1,j], D[i,j-1], D[i-1,j-1]) + 1
+#     score = (1 - D[-1,-1]/max(len(p), len(y))) * 100
+    
+#     return score
+
 @jit("float64(int64[:], int64[:])")
-def edit_(p,y):
-    n_col = len(p)
-    n_row = len(y)
-    D = np.zeros([n_row+1, n_col+1], np.float)
-    for i in range(n_row+1):
+def levenstein_(p,y):
+    m_row = len(p)    
+    n_col = len(y)
+    D = np.zeros([m_row+1, n_col+1], np.float)
+    for i in range(m_row+1):
         D[i,0] = i
     for i in range(n_col+1):
-        D[0,i] = i    
+        D[0,i] = i
 
     for j in range(1, n_col+1):
-        for i in range(1, n_row+1):
-            if p[i-1] == y[j-1]:
+        for i in range(1, m_row+1):
+            if y[j-1]==p[i-1]:
+                D[i,j] = D[i-1,j-1] 
+            else:
+                D[i,j] = min(D[i-1,j]+1,
+                             D[i,j-1]+1,
+                             D[i-1,j-1]+1)
+    
+    score = (1 - D[-1,-1]/max(m_row, n_col) ) * 100
+    return score
+
+@jit("float64(int64[:], int64[:])")
+def lcs_(p,y):
+    m_row = len(p)    
+    n_col = len(y)
+    D = np.zeros([m_row+1, n_col+1], np.float)
+    for i in range(m_row+1):
+        D[i,0] = i
+    for i in range(n_col+1):
+        D[0,i] = i
+
+    for i in range(1, m_row+1):
+        for j in range(1, n_col+1):
+            if y[j-1]==p[i-1]:
                 D[i,j] = D[i-1,j-1]
             else:
-                D[i,j] = min(D[i-1,j], D[i,j-1], D[i-1,j-1]) + 1
-
-    return (1 - D[-1,-1]/max(len(p), len(y))) * 100
+                D[i,j] = min(D[i-1,j], D[i,j-1])+1
+    
+    score = (1 - D[-1,-1]/(m_row+n_col) ) * 100
+    return score
 
 
 def edit_score(P, Y):
-    # def edit_(p,y):
-    #     score = DTW(p[:,None], y[:,None])
-    #     score = 1. - score/max(len(p), len(y)) 
-    #     return score*100
-
     if type(P) == list:
         tmp = []
         for i in range(len(P)):
             P_ = utils.segment_labels(P[i])
             Y_ = utils.segment_labels(Y[i])            
-            tmp += [edit_(P_,Y_)]
+            tmp += [levenstein_(P_,Y_)]
         return np.mean(tmp)
     else:
         P_ = utils.segment_labels(P)
         Y_ = utils.segment_labels(Y)
-        return edit_(P_, Y_)
+        return levenstein_(P_, Y_)
+
+def lcs_score(P, Y):
+    if type(P) == list:
+        tmp = []
+        for i in range(len(P)):
+            P_ = utils.segment_labels(P[i])
+            Y_ = utils.segment_labels(Y[i])            
+            tmp += [lcs_(P_,Y_)]
+        return np.mean(tmp)
+    else:
+        P_ = utils.segment_labels(P)
+        Y_ = utils.segment_labels(Y)
+        return lcs_(P_, Y_)
+
 
 # def overlap_score(P, Y):
 #   def overlap_(p,y):
