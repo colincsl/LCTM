@@ -1,8 +1,8 @@
 import numpy as np
 from numba import float64, jit, int16, boolean, int64
 
-@jit("float64[:,:](float64[:,:], int16, float64[:,:], float64[:], float64[:])")
-def segmental_forward(x, max_segs, pw=None, start_prior=None, end_prior=None):
+@jit("float64[:,:](float64[:,:], int16, float64[:,:])")
+def segmental_forward(x, max_segs, pw=None):
 	# Assumes segment function is additive: f(x)=sum_t'=t^t+d x_t'
 	T, n_classes = x.shape
 	LARGE_NUMBER = 99999.
@@ -13,8 +13,6 @@ def segmental_forward(x, max_segs, pw=None, start_prior=None, end_prior=None):
 	# initialize first segment scores
 	scores[0] = np.cumsum(x, 0)
 
-	# if start_prior is not None:
-	# 	scores[0] += start_prior.T
 
 	# Compute scores per segment
 	for m in range(1, max_segs):
@@ -38,11 +36,8 @@ def segmental_forward(x, max_segs, pw=None, start_prior=None, end_prior=None):
 				# Add cost of curent frame to best previous cost
 				scores[m, t, c] = best_prev + x[t, c]
 
-	# if end_prior is not None:
-	# 	scores[-1] += end_prior.T
-
 	# Set nonzero entries to 0 for visualization
-	# scores[scores<0] = 0
+	scores[scores<0] = 0
 
 	return scores
 
@@ -112,6 +107,7 @@ def segmental_forward(x, max_segs, pw=None, start_prior=None, end_prior=None):
 
 # 	return scores	
 
+""" This version maximizes!!! """
 @jit("float64[:,:](float64[:,:], int16, float64[:,:])")
 def segmental_forward_normalized(x, max_segs, pw=None):
 	# Assumes segment function is normalized by duration: f(x)= 1/d sum_t'=t^t+d x_t'
@@ -124,8 +120,7 @@ def segmental_forward_normalized(x, max_segs, pw=None):
 	integral_scores = np.cumsum(x, 0)
 
 	# Intial scores
-	scores[0] = integral_scores.copy()
-	scores[0] /= np.arange(1, T+1)[:,None]
+	scores[0] = integral_scores.copy() / np.arange(1, T+1)[:,None]
 
 	starts = np.zeros([max_segs, n_classes], np.int)
 	current_segment = np.zeros([max_segs, n_classes], np.float)
@@ -134,13 +129,13 @@ def segmental_forward_normalized(x, max_segs, pw=None):
 
 	# Compute scores for each segment in sequence
 	for m in range(1, max_segs):
-		# Compute scores for each timestep
-		for t in range(1, T):
-			# Compute score for each class
-			for c in range(n_classes):
+		# Compute score for each class
+		for c in range(n_classes):
+			# Compute scores for each timestep
+			for t in range(1, T):
 				# Cost of current segment
 				new_segment = integral_scores[t, c] - integral_scores[starts[m,c], c]
-				# new_segment /= (t - starts[m,c])
+				new_segment /= (t - starts[m,c])
 				cost_to_stay = scores[m, t-1, c] - current_segment[m,c] + new_segment
 
 				current_segment[m,c] = new_segment
@@ -153,7 +148,7 @@ def segmental_forward_normalized(x, max_segs, pw=None):
 
 					# Previous segment, other class
 					score_change = scores[m-1, t-1, c_prev] + pw[c_prev,c]
-					if score_change > cost_to_stay:
+					if score_change > best_score:
 						best_score = score_change
 						current_segment[m,c] = 0
 						starts[m,c] = t
@@ -163,8 +158,68 @@ def segmental_forward_normalized(x, max_segs, pw=None):
 
 	# Set nonzero entries to 0 for visualization
 	# scores[scores<0] = 0
+	scores[scores<=-LARGE_NUMBER] = 0
 
 	return scores	
+
+# """ This version minimizes!!! """
+# @jit("float64[:,:](float64[:,:], int16, float64[:,:])")
+# def segmental_forward_normalized(x, max_segs, pw=None):
+# 	# Assumes segment function is normalized by duration: f(x)= 1/d sum_t'=t^t+d x_t'
+# 	T, n_classes = x.shape
+# 	LARGE_NUMBER = 99999.
+# 	scores = np.zeros([max_segs, T, n_classes], np.float) + LARGE_NUMBER
+# 	if pw is None:
+# 		pw = np.zeros([n_classes, n_classes], np.float)
+
+# 	integral_scores = np.cumsum(x, 0)
+
+# 	# Intial scores
+# 	scores[0] = integral_scores.copy()
+# 	scores[0] /= np.arange(1, T+1)[:,None]
+
+# 	starts = np.zeros([max_segs, n_classes], np.int)
+# 	current_segment = np.zeros([max_segs, n_classes], np.float)
+# 	# durations = np.ones([max_segs, n_classes], np.int)
+# 	# classes = np.zeros([max_segs, n_classes], np.int)
+
+# 	# Compute scores for each segment in sequence
+# 	for m in range(1, max_segs):
+# 		# Compute scores for each timestep
+# 		for t in range(1, T):
+# 			# Compute score for each class
+# 			for c in range(n_classes):
+# 				# Cost of current segment
+# 				new_segment = integral_scores[t, c] - integral_scores[starts[m,c], c]
+# 				new_segment /= (t - starts[m,c])
+# 				cost_to_stay = scores[m, t-1, c] - current_segment[m,c] + new_segment
+
+# 				current_segment[m,c] = new_segment
+# 				best_score = cost_to_stay
+
+# 				# Check if it is cheaper to create a new segment or stay in same class
+# 				for c_prev in range(n_classes):
+# 					if c_prev == c:
+# 						continue
+
+# 					# Previous segment, other class
+# 					score_change = scores[m-1, t-1, c_prev] + pw[c_prev,c]
+# 					if score_change < best_score:
+# 						best_score = score_change
+# 						current_segment[m,c] = 0
+# 						starts[m,c] = t
+
+# 				# Add cost of curent frame to best previous cost
+# 				scores[m, t, c] = best_score
+
+# 	# Set nonzero entries to 0 for visualization
+# 	# scores[scores<0] = 0
+# 	scores[scores>=LARGE_NUMBER] = 0
+# 	scores[scores<=-LARGE_NUMBER] = 0
+
+# 	return scores	
+
+
 
 if 0:
 	# Toy example
@@ -177,9 +232,12 @@ if 0:
 	x[:30,0] = 1
 	x[30:60,1] = 1
 	x[60:,2] = 1
-	pw = np.zeros([3,3])-999
+	pw = np.zeros([3,3])-1000
 	pw[0,1] = 1
 	pw[1,2] = 1
+
+	# x = -np.log(np.maximum(x, 0.05))
+	# pw = -np.log(np.maximum(pw, 0.05))
 
 	scores = segmental_forward_normalized(x, 10)
 	y_ = segmental_backward(scores)
@@ -188,7 +246,7 @@ if 0:
 # %timeit tmp = segmental_forward(x.T, 20)
 # %timeit tmp_b = segmental_forward_pw(x.T, pw, 20)
 
-
+""" maximizes """
 # @jit("int16[:,:](float64[:,:])")
 # def segmental_backward(scores):
 # 	n_segs, T, n_classes = scores.shape
@@ -204,7 +262,7 @@ if 0:
 
 # 		# Check if it's better to stay or switch segments
 # 		if any(scores[m-1, t-1] > score_left):
-# 			next_class =    scores[m-1, t-1].argmax()			
+# 			next_class =    scores[m-1, t-1].argmax()	
 # 			score_topleft = scores[m-1, t-1, next_class]
 # 			seq_c += [next_class]
 # 			seq_t += [t]
@@ -241,8 +299,8 @@ def segmental_backward(scores, pw=None):
 	for t in range(T, 0, -1):
 		# Scores of previous timestep in current segment
 		score_left = scores[m, t-1, seq_c[-1]]
-		score_topleft = scores[m-1, t-1] 
-		# score_topleft = scores[m-1, t-1] + pw[:,seq_c[-1]]
+		# score_topleft = scores[m-1, t-1] 
+		score_topleft = scores[m-1, t-1] + pw[:,seq_c[-1]]
 
 		# Check if it's better to stay or switch segments
 		if any(score_topleft > score_left):
@@ -267,6 +325,50 @@ def segmental_backward(scores, pw=None):
 		y_out[seq_t[i]:seq_t[i+1]] = seq_c[i]
 
 	return y_out	
+
+""" minimizes """
+# @jit("int16[:,:](float64[:,:], float64[:,:])")
+# def segmental_backward(scores, pw=None):
+# 	n_segs, T, n_classes = scores.shape
+
+# 	if pw is None:
+# 		pw = np.zeros([n_classes, n_classes], np.float)		
+
+# 	# Start at end
+# 	seq_c = [scores[-1, -1].argmin()] # Class
+# 	seq_t = [T] # Time
+# 	m = n_segs-1
+
+# 	for t in range(T, 0, -1):
+# 		# Scores of previous timestep in current segment
+# 		score_left = scores[m, t-1, seq_c[-1]]
+# 		score_topleft = scores[m-1, t-1] 
+# 		# score_topleft = scores[m-1, t-1] + pw[:,seq_c[-1]]
+
+# 		# Check if it's better to stay or switch segments
+# 		if any(score_topleft < score_left):
+# 			next_class =    score_topleft.argmin()			
+# 			score_topleft = score_topleft[next_class]
+# 			seq_c += [next_class]
+# 			seq_t += [t]
+# 			m -= 1
+
+# 			if m == 0:
+# 				break
+# 	seq_t += [0]
+
+# 	if m != 0:
+# 		print("# segs (m) not zero!", m)
+
+# 	seq_c = list(reversed(seq_c))
+# 	seq_t = list(reversed(seq_t))
+
+# 	y_out = np.empty(T, np.int)
+# 	for i in range(len(seq_c)):
+# 		y_out[seq_t[i]:seq_t[i+1]] = seq_c[i]
+
+# 	return y_out	
+
 
 def segmental_inference(x, max_segs, pw=None, normalized=False, verbose=False):
 
