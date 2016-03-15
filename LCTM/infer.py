@@ -141,7 +141,8 @@ def segmental_forward_normalized(x, max_segs, pw=None):
 				# Cost of current segment
 				new_segment = integral_scores[t, c] - integral_scores[starts[m,c], c]
 				# new_segment /= (t - starts[m,c])
-				cost_to_stay = scores[m, t-1, c] - current_segment[m,c] + new_segment
+				# cost_to_stay = scores[m, t-1, c] - current_segment[m,c] + new_segment
+				cost_to_stay = scores[m, starts[m,c], c] + new_segment
 
 				current_segment[m,c] = new_segment
 				best_score = cost_to_stay
