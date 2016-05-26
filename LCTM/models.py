@@ -7,7 +7,6 @@ import sklearn.metrics as sm
 import scipy.ndimage as nd
 import matplotlib.pylab as plt
 
-# os.chdir("/Users/colin/CVPR2016/src/")
 from LCTM import weights
 from LCTM.energies import priors
 from LCTM.energies import unary
@@ -19,6 +18,7 @@ from LCTM import ssvm
 
 
 class Logger:
+    # Log objective values for visualization
     def __init__(self):
         self.objectives = {}
 
@@ -53,6 +53,7 @@ class CoreModel:
 
     @property
     def is_latent(model):
+        # Check if this is a latent model or not
         if hasattr(model, "n_latent") and model.n_latent > 1:
             return True
         else:
@@ -60,6 +61,7 @@ class CoreModel:
 
     @property
     def n_nodes(model):
+        # Check how many latent notes there are (number of classes x number of latent states per class)
         if model.is_latent:
             n_nodes = model.n_classes*model.n_latent
         else:
@@ -67,16 +69,18 @@ class CoreModel:
         return n_nodes
 
     def get_weights(model, name=None):
+        # Get a list of the weights for each potential
         if name is None:
             return list(model.ws.values())
         else:
             return model.ws[name]
 
     def predict_latent(model, Xi):
+        # Output the best latent state for each timestep
         return model.predict(Xi, output_latent=True)
 
     def decision_function(model, Xi):
-        # This function is applicable to normal and latent models
+        # Compute the score for each timestep. This computes all potentials but does not compute the best label for eachl
         if type(Xi) is list:
             return [model.decision_function(Xi[i]) for i in range(len(Xi))]
 
@@ -102,7 +106,7 @@ class CoreModel:
 
 
     def predict(model, Xi, Yi=None, is_training=False, output_latent=False, inference=None, known_order=None):
-        # This function is applicable to normal and latent models
+        # Compute the best label for each timesteo
         if type(Xi) is list:
             out = []
             for i in range(len(Xi)):
@@ -232,51 +236,4 @@ class PretrainedModel(CoreModel):
         if skip: self.potentials["pw"] = pw.pairwise(skip=skip)
         if segmental: self.potentials["seg_pw"] = pw.segmental_pairwise(name="seg_pw")
 
-if 0:
-    Xi = X_test[0]
-    Yi = y_test[0]
-    X, Y = X_train, y_train
-    is_training=False
 
-    # model = ChainModel(skip=100, debug=True)
-    skip = 100
-    model = LatentChainModel(n_latent=1, skip=skip, debug=True)
-    # model = LatentConvModel(n_latent=1, conv_len=50, skip=0, debug=True)
-    # model = SegmentalModel(skip=200, debug=True)
-    # model = ConvModel(skip=200, conv_len=200, debug=True)
-    model.fit(X_train, y_train, n_iter=200, learning_rate=.1, pretrain=True)
-
-    # Framewise inference
-    model.inference_type = "framewise"
-    P_test = model.predict(X_test)
-    acc = utils.accuracy(P_test, y_test)
-    print("Frame Inference Acc: {:.3}%".format(acc))
-
-    # Framewise inference
-    model.inference_type = "filtered"
-    model.filter_len = skip//2
-    P_test_filtered = model.predict(X_test)
-    acc = utils.accuracy(P_test_filtered, y_test)
-    print("Filtered Inference Acc: {:.3}%".format(acc))
-
-    # Segmental inference
-    model.inference_type = "segmental"
-    model.max_segs = utils.max_seg_count(y_train)
-    P_test_seg = model.predict(X_test)
-    acc = utils.accuracy(P_test_seg, y_test)
-    print("Seg Inference Acc: {:.3}%".format(acc))
-
-    n_test = len(y_test)
-    imgs = [np.vstack([y_test[i], P_test[i], P_test_filtered[i], P_test_seg[i]]) for i in range(n_test)]
-
-    for i in range(n_test):
-        plt.subplot(n_test,1,i+1)
-        utils.imshow_(imgs[i])
-
-
-    # for i in range(model.n_classes):
-    #     subplot(4,3,i+1)
-    #     imshow_(np.squeeze(model.ws['conv'][i]))
-    #     # axis("off")
-
-    # show()
