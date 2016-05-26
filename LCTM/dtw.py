@@ -54,7 +54,8 @@ def DTW(x, y, max_value=np.inf, output_correspondences=False, output_costs=False
 
     cost = np.zeros([Tx, Ty], np.float32) + np.inf
     # Compute first row
-    cost[0,:] = ((x[:,0][:,None]-y)**2).sum(0).cumsum(0)
+    # cost[0,:] = ((x[:,0][:,None]-y)**2).sum(0).cumsum(0)
+    cost[0,:] = (np.abs(x[:,0][:,None]-y)).sum(0).cumsum(0)
     # cost[0,:] = ((x[:,0][:,None]!=y)).sum(0).cumsum(0)
     
     # Compute rest of the rows
@@ -66,7 +67,8 @@ def DTW(x, y, max_value=np.inf, output_correspondences=False, output_costs=False
             top = cost[tx-1, ty]
             left = cost[tx, ty-1]
 
-            current = np.sum((x[:,tx]-y[:,ty])**2)
+            # current = np.sum((x[:,tx]-y[:,ty])**2)
+            current = np.sum(np.abs(x[:,tx]-y[:,ty]))
             # current = np.sum((x[:,tx]!=y[:,ty]))
             cost[tx, ty] = min(topleft, left, top) + current
 

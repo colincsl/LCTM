@@ -2,3 +2,4 @@
 build
 */__pycache__
 LCTM/energies/__pycache__/*
+eval_tmp_tcnn.py

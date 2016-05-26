@@ -30,8 +30,9 @@ def imshow_(x, **kwargs):
 # 		mask[i,:l] = 1
 # 	return X_, Y_, mask[:,:,None]
 
-def mask_data(X, Y):
-	max_len = np.max([x.shape[1] for x in X])
+def mask_data(X, Y, max_len=None):
+	if max_len is None:
+		max_len = np.max([x.shape[1] for x in X])
 	X_ = np.zeros([len(X), X[0].shape[0], max_len])
 	Y_ = np.zeros([len(X), Y[0].shape[0], max_len])
 	mask = np.zeros([len(X), max_len])

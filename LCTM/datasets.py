@@ -61,21 +61,23 @@ class Dataset:
         # Format the train/test split names
         files_features = self.get_files(dir_labels, idx_task)
 
-        # Load data
-        if "Split_1" in os.listdir(dir_labels):
-            Y_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(dir_labels,idx_task,f)) )["Y"].ravel() for f in files_features]
-        else:
-            Y_all = [ sio.loadmat( closest_file("{}{}".format(dir_labels,f)) )["Y"].ravel() for f in files_features]
+        # # Load data
+        # if "Split_1" in os.listdir(dir_labels):
+        #     Y_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(dir_labels,idx_task,f)) )["Y"].ravel() for f in files_features]
+        # else:
+        #     Y_all = [ sio.loadmat( closest_file("{}{}".format(dir_labels,f)) )["Y"].ravel() for f in files_features]
 
         if "Split_1" in os.listdir(dir_features):
             X_all = [ sio.loadmat( closest_file("{}Split_{}/{}".format(dir_features,idx_task, f)) )[feature_type].astype(np.float64) for f in files_features]
+            # Y_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(dir_features,idx_task,f)) )["Y"].ravel() for f in files_features]
+            Y_all = [ sio.loadmat( closest_file("{}/Split_{}/{}".format(dir_features,idx_task,f)) )["Y"] for f in files_features]
         else:        
             X_all = [ sio.loadmat( closest_file("{}/{}".format(dir_features, f)) )[feature_type].astype(np.float64) for f in files_features]
-        # Make sure labels are sequential
-        Y_all = utils.remap_labels(Y_all)
+            # Y_all = [ sio.loadmat( closest_file("{}{}".format(dir_features,f)) )["Y"].ravel() for f in files_features]
+            Y_all = [ sio.loadmat( closest_file("{}{}".format(dir_features,f)) )["Y"] for f in files_features]
 
-        # if self.name == "50Salads":
-        #     Y_all = [nd.median_filter(y, 300) for y in Y_all]
+        # Make sure labels are sequential
+        # Y_all = utils.remap_labels(Y_all)
 
         # Make sure axes are correct (FxT not TxF for F=feat, T=time)
         if X_all[0].shape[0]!=X_all[1].shape[0]:
@@ -84,7 +86,8 @@ class Dataset:
 
         # Subsample the data
         if sample_rate > 1:
-            X_all, Y_all = utils.subsample(X_all, Y_all, sample_rate)
+            X_all, _ = utils.subsample(X_all, Y_all, sample_rate)
+            Y_all, _ = utils.subsample(Y_all, Y_all, sample_rate)
 
         self.n_classes = len(np.unique(np.hstack(Y_all)))
 
