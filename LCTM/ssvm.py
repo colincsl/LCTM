@@ -88,14 +88,3 @@ def latent_loss_augmented_unaries(score, Yi, n_latent):
         score[start:stop,t] -= 1
 
     return score
-
-
-# From prediction function
-# # This is used when finding the best set of hidden states
-# if best_hidden
-#     y_base = Yi-(Yi-1)%n_hidden
-#     for t=1:n_timesteps
-#         score[y_base[t]:y_base[t]+n_hidden-1, t] += 1e4
-#     end
-# end
-
