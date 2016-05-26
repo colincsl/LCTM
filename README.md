@@ -8,14 +8,13 @@ LCTM was developed for learning structured prediction models including Condition
 
 [Segmental Spatio-Temporal CNNs for Fine-grained Action Segmentation and Classification](http://arxiv.org/abs/1602.02995). Colin Lea, Austin Reiter, Rene Vidal, Greg Hager. arXiv 2016.
 
-This library is most directly comparable to [pyStruct](https://pystruct.github.io/). While pyStruct is great, we found limitations from their coupling between learning and inference and due to their lack of recent learning algorithms. That being said, while LCTM addresses these limitations, it acknowledge that in its current form is not as general at pyStruct.
-
 LCTM is a **potential**-focused framework. Energy potentials (e.g. unary, pairwise, or priors) are the heart of any given model and vary substantially between domains. Our library makes it easy to develop new potentials. Each potential only requires two functions: a score (given raw data and labels) and inference (given the data and weights). In addition, we have a special data structure for all weights that works seemlessly with learning regardless of if they are vectors, matrices, or tensors.
 
 We speed up LCTM using [Numba](http://numba.pydata.org/), a recent library for compiling Python code with LLVM, which is crucial for some of our inference algorithms. Numba makes it trivial to achieve C++ like performance from Python code.
 
-For any questions/comments/concerns email [Colin](mailto:colincsl@gmail.com).
+This library is most directly comparable to [pyStruct](https://pystruct.github.io/). While pyStruct is great in certain ways, we found limitations from their coupling between learning and inference and due to their lack of recent learning algorithms. We find our potential-focused design makes it a lot easier to develop new models and experiment with different loss functions and learning algorithms.
 
+For any questions/comments/concerns email [Colin](mailto:colincsl@gmail.com).
 
 ### Usage
 
